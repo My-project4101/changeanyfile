@@ -1,0 +1,19 @@
+# .gitignore
+# Node
+node_modules/
+dist/
+build/
+
+# Python
+__pycache__/
+*.pyc
+.env
+venv/
+
+# Docker
+docker-compose.override.yml
+*.log
+
+# IDE
+.vscode/
+.idea/
