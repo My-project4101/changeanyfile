@@ -1,0 +1,20 @@
+services:
+  backend:
+    container_name: caf_backend
+    build:
+      context: ../..           # repo root
+      dockerfile: services/backend/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../../services/backend:/app
+    environment:
+      - ENV=development
+
+  frontend:
+    container_name: caf_frontend
+    build:
+      context: ../..           # repo root
+      dockerfile: infra/docker/frontend.Dockerfile
+    ports:
+      - "3000:80"
