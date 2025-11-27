@@ -2,3 +2,8 @@ fastapi
 uvicorn[standard]
 python-multipart
 aiofiles
+python-dotenv
+# DB & ORM
+sqlmodel             # for async Postgres (if you use async DB operations later)
+
+
