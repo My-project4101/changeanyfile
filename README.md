@@ -1,14 +1,18 @@
-# ChangeAnyFile.ai
+## Dev Quickstart (local, no Docker yet)
 
-AI-powered file conversion & compression — chatbot-driven.
+### Backend (FastAPI)
+1. cd services/backend
+2. python -m pip install --upgrade pip
+3. pip install -r requirements.txt
+4. uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+5. Check http://localhost:8000/health
 
-## Repo structure
-- /services/frontend : React app
-- /services/backend  : FastAPI app
-- /infra             : Dockerfiles and compose
-- /docs              : Architecture & design docs
+### Frontend (React + Vite)
+1. cd services/frontend
+2. npm install
+3. npm run dev
+4. Open http://localhost:3000
 
-## Quickstart (dev)
-1. Install Docker & Docker Compose.
-2. Clone repo.
-3. Run: `docker-compose up --build` (after we scaffold infra).
+### Upload test
+- Use the frontend page to upload a jpg/png/pdf/docx.
+- Uploaded files are saved in `services/backend/uploads`.
