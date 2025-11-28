@@ -17,3 +17,14 @@ docker-compose.override.yml
 # IDE
 .vscode/
 .idea/
+
+# Env files
+services/frontend/.env.local
+services/backend/.env
+
+# Node / Python / Builds
+services/frontend/node_modules/
+services/frontend/dist/
+services/backend/__pycache__/
+services/backend/uploads/
+services/backend/processed/
