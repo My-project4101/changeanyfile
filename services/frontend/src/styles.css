@@ -144,12 +144,6 @@ body {
   border: 1px solid var(--border);
 }
 
-.section-title {
-  font-size: 0.9rem;
-  font-weight: 600;
-  margin: 8px 0;
-}
-
 .code-block {
   background: #0f172a;
   color: #e5e7eb;
@@ -189,4 +183,10 @@ body {
 
 .status-dot.failed {
   background: #ef4444;
+}
+
+.section-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 8px 0;
 }
