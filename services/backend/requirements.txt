@@ -3,7 +3,9 @@ uvicorn[standard]
 python-multipart
 aiofiles
 python-dotenv
-# DB & ORM
+# database & models
 sqlmodel             # for async Postgres (if you use async DB operations later)
+Pillow
+
 
 

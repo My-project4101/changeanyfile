@@ -23,7 +23,7 @@ app = FastAPI(title="ChangeAnyFile API - No Docker / Async Worker")
 # CORS: DEV - allow all; you can restrict later
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS or ["*"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
