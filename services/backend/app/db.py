@@ -1,25 +1,27 @@
-# services/backend/app/db.py
-from sqlmodel import SQLModel, create_engine, Session
-from .config import DATABASE_URL, BASE_DIR
-from pathlib import Path
+from sqlmodel import SQLModel, Session, create_engine
 
-# If DATABASE_URL not set, fall back to SQLite dev database
-if DATABASE_URL:
-    db_url = DATABASE_URL
-else:
-    sqlite_path = Path(BASE_DIR) / "dev.sqlite"
-    db_url = f"sqlite:///{sqlite_path}"
+# SQLite database for local development
+DATABASE_URL = "sqlite:///./dev.sqlite"
 
-connect_args = {}
-if db_url.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
-
-engine = create_engine(db_url, echo=False, connect_args=connect_args)
+# SQLite needs this flag for multithreading (FastAPI + background tasks)
+engine = create_engine(
+    DATABASE_URL,
+    echo=False,
+    connect_args={"check_same_thread": False}
+)
 
 
-def create_db_and_tables():
+def init_db():
+    """
+    Create database tables.
+    Called once on application startup.
+    """
     SQLModel.metadata.create_all(engine)
 
 
 def get_session() -> Session:
+    """
+    Get a new database session.
+    Caller is responsible for closing it.
+    """
     return Session(engine)
