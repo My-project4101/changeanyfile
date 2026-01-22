@@ -9,6 +9,7 @@ from sqlmodel import select
 from .db import get_session
 from .models import Job
 
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 UPLOAD_DIR = BASE_DIR / "uploads"
 PROCESSED_DIR = BASE_DIR / "processed"
@@ -17,40 +18,45 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 PROCESSED_DIR.mkdir(exist_ok=True)
 
 
-def process_image_with_actions(src: Path, dest_base: Path, actions: dict) -> Path:
+def process_image_with_actions(src: Path, dest_base: Path, actions: list) -> Path:
     with Image.open(src) as img:
         img = img.convert("RGB")
 
-        # Resize
-        resize = actions.get("resize")
-        if resize:
-            w = resize.get("width")
-            h = resize.get("height")
-            if w and h:
-                img.thumbnail((w, h), Image.LANCZOS)
-
-        # Format
         pil_format = "JPEG"
         ext = src.suffix.lower()
-
-        convert = actions.get("convert")
-        if convert:
-            fmt = convert.get("format")
-            if fmt == "webp":
-                pil_format = "WEBP"
-                ext = ".webp"
-            elif fmt == "png":
-                pil_format = "PNG"
-                ext = ".png"
-            elif fmt == "jpeg":
-                pil_format = "JPEG"
-                ext = ".jpg"
-
-        # Compression
         quality = 80
-        compression = actions.get("compression")
-        if compression and "quality" in compression:
-            quality = int(compression["quality"])
+
+        for action in actions:
+            action_type = action.get("action")
+
+            # Resize
+            if action_type == "resize":
+                w = action.get("width")
+                h = action.get("height")
+                if w or h:
+                    img.thumbnail(
+                        (w or img.width, h or img.height),
+                        Image.LANCZOS
+                    )
+
+            # Convert
+            elif action_type == "convert":
+                fmt = action.get("format")
+                if fmt == "webp":
+                    pil_format = "WEBP"
+                    ext = ".webp"
+                elif fmt == "png":
+                    pil_format = "PNG"
+                    ext = ".png"
+                elif fmt in ("jpg", "jpeg"):
+                    pil_format = "JPEG"
+                    ext = ".jpg"
+
+            # Compress
+            elif action_type == "compress":
+                target_kb = action.get("target_kb")
+                if target_kb:
+                    quality = max(20, min(95, int(quality * 0.8)))
 
         final_path = dest_base.with_suffix(ext)
 
@@ -82,10 +88,10 @@ def process_job_async(job_id: str):
         dest_base = PROCESSED_DIR / f"{job.file_id}-processed"
 
         is_image = src.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp")
-        final_path = None
 
         if is_image:
-            actions = json.loads(job.actions_json) if job.actions_json else {}
+            payload = json.loads(job.actions_json) if job.actions_json else {}
+            actions = payload.get("actions", [])
             final_path = process_image_with_actions(src, dest_base, actions)
         else:
             final_path = dest_base.with_suffix(src.suffix)

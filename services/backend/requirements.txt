@@ -6,6 +6,7 @@ python-dotenv
 # database & models
 sqlmodel             # for async Postgres (if you use async DB operations later)
 Pillow
-
+openai>=1.0.0
+python-dotenv
 
 

@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+load_dotenv()
 from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -12,7 +14,8 @@ import time
 from .db import get_session, init_db
 from .models import Job
 from .schemas import CreateJobRequest
-from .ai_parser import parse_prompt_to_actions
+from .ai_parser import parse_prompt_with_ai
+
 from .tasks import process_job_async
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -61,7 +64,7 @@ async def create_job(
 ):
     session = get_session()
 
-    actions = parse_prompt_to_actions(req.prompt)
+    actions = parse_prompt_with_ai(req.prompt)
 
     job = Job(
         file_id=req.file_id,
