@@ -1,50 +1,24 @@
-import React, { useState } from "react";
+import UploadForm from "./components/UploadForm";
 
-export default function App() {
-  const [file, setFile] = useState(null);
-  const [resp, setResp] = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  const upload = async () => {
-    if (!file) return alert("Choose a file first");
-    setLoading(true);
-    const form = new FormData();
-    form.append("file", file);
-
-    try {
-      const res = await fetch("http://localhost:8000/upload", {
-        method: "POST",
-        body: form,
-      });
-      const data = await res.json();
-      setResp({ ok: res.ok, data });
-    } catch (err) {
-      setResp({ ok: false, error: err.message });
-    } finally {
-      setLoading(false);
-    }
-  };
-
+function App() {
   return (
-    <div style={{ padding: 24, fontFamily: "Arial, sans-serif" }}>
-      <h1>ChangeAnyFile.ai — Dev Upload</h1>
-      <p>Choose a file (png/jpg/pdf/docx). No auth required (dev).</p>
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+        
+        <header className="mb-8 text-center">
+          <h1 className="text-3xl font-semibold tracking-tight">
+            ChangeAnyFile<span className="text-blue-600">.ai</span>
+          </h1>
+          <p className="mt-2 text-sm text-slate-500">
+            Convert, compress, and transform files using AI prompts
+          </p>
+        </header>
 
-      <input
-        type="file"
-        onChange={(e) => setFile(e.target.files && e.target.files[0])}
-      />
-      <br />
-      <button onClick={upload} disabled={loading} style={{ marginTop: 12 }}>
-        {loading ? "Uploading..." : "Upload & Get FileId"}
-      </button>
+        <UploadForm />
 
-      <div style={{ marginTop: 18 }}>
-        <h3>Response</h3>
-        <pre style={{ whiteSpace: "pre-wrap" }}>
-          {resp ? JSON.stringify(resp, null, 2) : "No response yet"}
-        </pre>
       </div>
     </div>
   );
 }
+
+export default App;

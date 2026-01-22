@@ -1,95 +1,114 @@
-# services/backend/app/tasks.py
-"""
-Async job processor without Celery / Redis.
-
-We:
-- Read Job from DB
-- Update status & logs
-- Copy file from uploads -> processed with "-processed" suffix
-"""
-
-import time
+import json
 import shutil
-import asyncio
+import time
+from pathlib import Path
+
+from PIL import Image
 from sqlmodel import select
 
 from .db import get_session
-from .models import Job, JobLog
-from .config import UPLOAD_DIR, PROCESSED_DIR
+from .models import Job
 
 
-async def process_job_async(job_id: str):
-    """
-    Process a single job asynchronously:
-    - Mark status = processing
-    - Find uploaded file
-    - Copy to processed
-    - Mark status = completed or failed
-    """
+BASE_DIR = Path(__file__).resolve().parent.parent
+UPLOAD_DIR = BASE_DIR / "uploads"
+PROCESSED_DIR = BASE_DIR / "processed"
+
+UPLOAD_DIR.mkdir(exist_ok=True)
+PROCESSED_DIR.mkdir(exist_ok=True)
+
+
+def process_image_with_actions(src: Path, dest_base: Path, actions: list) -> Path:
+    with Image.open(src) as img:
+        img = img.convert("RGB")
+
+        pil_format = "JPEG"
+        ext = src.suffix.lower()
+        quality = 80
+
+        for action in actions:
+            action_type = action.get("action")
+
+            # Resize
+            if action_type == "resize":
+                w = action.get("width")
+                h = action.get("height")
+                if w or h:
+                    img.thumbnail(
+                        (w or img.width, h or img.height),
+                        Image.LANCZOS
+                    )
+
+            # Convert
+            elif action_type == "convert":
+                fmt = action.get("format")
+                if fmt == "webp":
+                    pil_format = "WEBP"
+                    ext = ".webp"
+                elif fmt == "png":
+                    pil_format = "PNG"
+                    ext = ".png"
+                elif fmt in ("jpg", "jpeg"):
+                    pil_format = "JPEG"
+                    ext = ".jpg"
+
+            # Compress
+            elif action_type == "compress":
+                target_kb = action.get("target_kb")
+                if target_kb:
+                    quality = max(20, min(95, int(quality * 0.8)))
+
+        final_path = dest_base.with_suffix(ext)
+
+        save_args = {"optimize": True}
+        if pil_format in ("JPEG", "WEBP"):
+            save_args["quality"] = quality
+
+        img.save(final_path, format=pil_format, **save_args)
+        return final_path
+
+
+def process_job_async(job_id: str):
     session = get_session()
+
+    job = session.exec(
+        select(Job).where(Job.job_id == job_id)
+    ).first()
+
+    if not job:
+        session.close()
+        return
+
+    job.status = "processing"
+    session.add(job)
+    session.commit()
+
     try:
-        stmt = select(Job).where(Job.job_id == job_id)
-        job = session.exec(stmt).first()
-        if not job:
-            print(f"[worker] Job {job_id} not found")
-            return
+        src = UPLOAD_DIR / job.file_id
+        dest_base = PROCESSED_DIR / f"{job.file_id}-processed"
 
-        def add_log(msg: str):
-            log = JobLog(job_id=job.job_id, message=msg)
-            session.add(log)
-            session.commit()
+        is_image = src.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp")
 
-        # mark processing
-        job.status = "processing"
-        job.updated_at = int(time.time())
-        session.add(job)
-        session.commit()
-        add_log("Worker started processing (async).")
+        if is_image:
+            payload = json.loads(job.actions_json) if job.actions_json else {}
+            actions = payload.get("actions", [])
+            final_path = process_image_with_actions(src, dest_base, actions)
+        else:
+            final_path = dest_base.with_suffix(src.suffix)
+            shutil.copy2(src, final_path)
 
-        # find the uploaded file
-        matches = list(UPLOAD_DIR.glob(f"{job.file_id}--*"))
-        if not matches:
-            add_log("Uploaded file not found on disk.")
-            job.status = "failed"
-            job.updated_at = int(time.time())
-            session.add(job)
-            session.commit()
-            return
-
-        src = matches[0]
-        processed_name = f"{src.stem}-processed{src.suffix}"
-        dest = PROCESSED_DIR / processed_name
-
-        add_log(f"Copying {src.name} -> {processed_name}")
-        # simulate some delay
-        await asyncio.sleep(1)
-
-        # copy file (blocking but quick; okay for dev)
-        shutil.copy2(src, dest)
-        add_log("File copied to processed folder.")
-
-        await asyncio.sleep(2)
-
-        job.result_filename = processed_name
-        job.result_path = str(dest)
-        job.result_size = dest.stat().st_size
+        job.result_filename = final_path.name
+        job.result_path = str(final_path)
+        job.result_size = final_path.stat().st_size
         job.status = "completed"
         job.updated_at = int(time.time())
-        session.add(job)
-        session.commit()
-
-        add_log("Processing completed successfully.")
-        print(f"[worker] job {job_id} completed")
 
     except Exception as e:
-        print(f"[worker] job {job_id} failed: {e}")
-        # best-effort: mark failed
-        try:
-            job.status = "failed"
-            job.updated_at = int(time.time())
-            session.add(job)
-            session.commit()
-        except Exception:
-            pass
+        print(f"Worker failed: {e}")
+        job.status = "failed"
+        job.updated_at = int(time.time())
+
     finally:
+        session.add(job)
+        session.commit()
         session.close()

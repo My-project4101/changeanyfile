@@ -1,30 +1,15 @@
-# .gitignore
-# Node
-node_modules/
-dist/
-build/
-
 # Python
 __pycache__/
 *.pyc
-.env
-venv/
 
-# Docker
-docker-compose.override.yml
-*.log
-
-# IDE
-.vscode/
-.idea/
-
-# Env files
-services/frontend/.env.local
-services/backend/.env
-
-# Node / Python / Builds
-services/frontend/node_modules/
-services/frontend/dist/
-services/backend/__pycache__/
+# Backend local stuff
+services/backend/dev.sqlite
 services/backend/uploads/
 services/backend/processed/
+services/backend/.env
+
+# Frontend build
+services/frontend/dist/
+
+# Node
+node_modules/

@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+/* optional global tweaks */
+html, body {
+  background-color: #f8fafc;
+}

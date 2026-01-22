@@ -3,7 +3,7 @@ from sqlmodel import SQLModel, Field
 from typing import Optional
 import datetime
 import uuid
-
+import json
 
 def now_ts() -> int:
     return int(datetime.datetime.utcnow().timestamp())
@@ -11,10 +11,19 @@ def now_ts() -> int:
 
 class Job(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    job_id: str = Field(default_factory=lambda: str(uuid.uuid4()), index=True, unique=True)
+
+    job_id: str = Field(
+        default_factory=lambda: str(uuid.uuid4()),
+        index=True,
+        unique=True
+    )
+
     file_id: str
     original_name: str
     prompt: Optional[str] = None
+
+    # 🆕 AI structured actions (stored as JSON string)
+    actions_json: Optional[str] = None
 
     status: str = Field(default="queued")  # queued | processing | completed | failed
     result_filename: Optional[str] = None
@@ -23,7 +32,6 @@ class Job(SQLModel, table=True):
 
     created_at: int = Field(default_factory=now_ts)
     updated_at: int = Field(default_factory=now_ts)
-
 
 class JobLog(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)

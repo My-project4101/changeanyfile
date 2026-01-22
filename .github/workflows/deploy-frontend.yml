@@ -3,7 +3,8 @@ name: Build & Deploy Frontend to GitHub Pages
 on:
   push:
     branches:
-      - main
+      - develop   # or main, depending on what you chose
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -32,8 +33,8 @@ jobs:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
         run: npm run build
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v2
+      - name: Upload artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
         with:
           path: services/frontend/dist
 
@@ -46,4 +47,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v2
+        uses: actions/deploy-pages@v4
